@@ -32,13 +32,17 @@ class SVMClassifier(nn.Module):
         self.args = args
         
         self.W = Parameter(torch.Tensor(args.num_classes, args.hidden_dims, args.hidden_dims))
-
+        
+        self.dropout = nn.Dropout(args.dropout)
+     
         glorot(self.W)
         
     def forward(self, mat_feats):
         
         mat_feats = logmap_id(mat_feats)
         
+        mat_feats = lalg.sym(self.dropout(mat_feats))
+     
         proj = lalg.sym(self.W) @ mat_feats.unsqueeze(dim=1)
         
         output = self.b_trace(proj)
@@ -81,7 +85,7 @@ class SPDLogisticClassifier(nn.Module):
         self.bias = Parameter(torch.ones(self.n_centroids))
                                 
         self.rows, self.cols = torch.triu_indices(self.dims, self.dims, device=args.device)
-           
+     
         glorot(self.means)
         glorot(self.sigma)
         
@@ -119,7 +123,9 @@ class SPDLogisticClassifier_Euclidean(nn.Module):
         self.bias = Parameter(torch.ones(self.n_centroids))
                                 
         self.rows, self.cols = torch.triu_indices(self.dims, self.dims, device=args.device)
-           
+        
+        self.dropout = nn.Dropout(args.dropout)
+               
         glorot(self.means)
         glorot(self.sigma)
         
@@ -129,6 +135,8 @@ class SPDLogisticClassifier_Euclidean(nn.Module):
         log_mats = logmap_id(node_feats)
         node_feats = log_mats[:, self.rows, self.cols]
         
+        node_feats = self.dropout(node_feats)
+     
         v = node_feats.unsqueeze(1) - self.means 
         
         v = v.unsqueeze(-2)    
